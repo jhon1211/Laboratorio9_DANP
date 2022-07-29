@@ -37,7 +37,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
-                android:backgroundTint="#8C8C8C"
+                android:backgroundTint="#26C6DA"
                 android:text="Tomar foto" />
 
             <Button
@@ -47,7 +47,7 @@
                 android:layout_alignParentEnd="true"
                 android:layout_alignParentRight="true"
                 android:layout_marginEnd="10dp"
-                android:backgroundTint="#A23D3D"
+                android:backgroundTint="#EF5350"
                 android:text="Grabar Video" />
         </RelativeLayout>
     </LinearLayout>

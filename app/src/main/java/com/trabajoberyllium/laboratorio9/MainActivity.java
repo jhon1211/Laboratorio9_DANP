@@ -2,6 +2,7 @@ package com.trabajoberyllium.laboratorio9;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
@@ -19,15 +20,21 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.trabajoberyllium.laboratorio9.databinding.ViewImageBinding;
 
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
@@ -44,7 +51,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Botones, vista de capturas, añadirle la funcion de escucha onClick a botones
         foto = findViewById(R.id.foto);
         foto.setOnClickListener(this);
         video = findViewById(R.id.video);
@@ -52,7 +58,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         interfaz = findViewById(R.id.interfaz);
 
-        // Procedimiento camera x
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         cameraProviderFuture.addListener(() -> {
             try {
@@ -98,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.foto:
-                startActivity(new Intent(this, mostrarFoto.class));
+                takePhoto();
                 break;
             case R.id.video:
                 if (video.getText() == "Grabar Video"){
@@ -154,6 +159,65 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
         }
+    }
+
+    private void takePhoto() {
+        if(tomarFoto == null){
+            return;
+        }
+
+        String name = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
+                .format(System.currentTimeMillis());
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+        contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg");
+
+        if(Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+            contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CameraX-Image");
+        }
+
+        ImageCapture.OutputFileOptions outputOptions = new ImageCapture.OutputFileOptions
+                .Builder(getContentResolver(),
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        contentValues)
+                .build();
+
+        tomarFoto.takePicture(
+                outputOptions,
+                ContextCompat.getMainExecutor(this),
+                new ImageCapture.OnImageSavedCallback() {
+                    @Override
+                    public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+                        String msg = "Photo capture succeeded: "+outputFileResults.getSavedUri();
+                        Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+                        Log.d("EXITO FOTO", msg);
+                        createViewDialog(outputFileResults.getSavedUri());
+                    }
+
+                    @Override
+                    public void onError(@NonNull ImageCaptureException exception) {
+                        Log.e("ERROR", "Photo capture failed: "+exception.getMessage());
+                    }
+                }
+        );
+
+    }
+    public void createViewDialog(Uri u) {
+        ViewImageBinding bindingPopup = ViewImageBinding.inflate(getLayoutInflater());
+        AlertDialog.Builder aBuilder = new AlertDialog.Builder(this);
+        View imagePopup = bindingPopup.getRoot();
+        aBuilder.setView(imagePopup);
+        aBuilder.setCancelable(false);
+        AlertDialog dialog = aBuilder.create();
+        dialog.show();
+
+        ImageView imageView = bindingPopup.imageView;
+        imageView.setImageURI(u);
+
+        bindingPopup.okButton.setOnClickListener(view -> {
+            dialog.dismiss();
+        });
+
     }
 
 }
